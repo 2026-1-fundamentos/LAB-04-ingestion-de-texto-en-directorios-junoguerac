@@ -5,6 +5,10 @@
 Escriba el codigo que ejecute la accion solicitada en cada pregunta.
 """
 
+import csv
+import zipfile
+from pathlib import Path
+
 
 def pregunta_01():
     """
@@ -71,3 +75,38 @@ def pregunta_01():
 
 
     """
+    base_dir = Path("files")
+    zip_path = base_dir / "input.zip"
+    input_dir = base_dir / "input"
+    output_dir = base_dir / "output"
+
+    with zipfile.ZipFile(zip_path, "r") as zip_file:
+        zip_file.extractall(base_dir)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    for split in ("train", "test"):
+        rows = []
+
+        for target in ("negative", "neutral", "positive"):
+            target_dir = input_dir / split / target
+
+            for file_path in sorted(target_dir.glob("*.txt")):
+                phrase = " ".join(file_path.read_text(encoding="utf-8").split())
+                rows.append(
+                    {
+                        "phrase": phrase,
+                        "target": target,
+                    }
+                )
+
+        output_path = output_dir / f"{split}_dataset.csv"
+
+        with output_path.open("w", encoding="utf-8", newline="") as csv_file:
+            writer = csv.DictWriter(
+                csv_file,
+                fieldnames=["phrase", "target"],
+                quoting=csv.QUOTE_ALL,
+            )
+            writer.writeheader()
+            writer.writerows(rows)
